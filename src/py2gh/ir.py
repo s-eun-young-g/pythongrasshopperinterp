@@ -53,6 +53,17 @@ class NodeKind(Enum):
 
 
 @dataclass
+class Internal:
+    """A value typed into an unwired input and stored in the .ghx as
+    PersistentData. `value` is a Python scalar (float/int/bool/str) for simple
+    types; for geometry/plane/etc. it is None and `kind` names the GH type
+    (e.g. "gh_bytearray"), since those need OpenNURBS to decode."""
+    kind: str
+    value: object = None
+    count: int = 1   # how many items were stored (a list input may hold several)
+
+
+@dataclass
 class OutPort:
     """An output parameter of a node. Downstream inputs cite its guid to wire."""
     node: "Node"
@@ -72,6 +83,7 @@ class InPort:
     instance_guid: str
     source: OutPort | None = None
     sources: list[OutPort] = field(default_factory=list)
+    persistent: "Internal | None" = None   # typed-in value when unwired
 
     def connect(self, out: OutPort) -> None:
         if self.source is None:

@@ -123,6 +123,13 @@ def to_python(graph: Graph) -> str:
             return f"{var}[{outs.index(out)}]"
         return var
 
+    def arg(inp) -> str:
+        """How an input renders: a wire if connected, else its typed-in value,
+        else None."""
+        if inp.source is not None:
+            return ref(inp.source)
+        return _literal(inp.persistent)
+
     def used_output_index(node: Node) -> int:
         for consumer in graph.nodes:
             for inp in consumer.inputs:
@@ -136,7 +143,7 @@ def to_python(graph: Graph) -> str:
         if node.kind is NodeKind.SLIDER:
             lines.append(f"{node_var[id(node)]} = {_fmt_number(node.data.get('value', 0.0))}")
         elif node.kind is NodeKind.OP:
-            lines.append(f"{node_var[id(node)]} = {_render_op(node, ref, used_output_index)}")
+            lines.append(f"{node_var[id(node)]} = {_render_op(node, arg, used_output_index)}")
         elif node.kind is NodeKind.PANEL and id(node) not in inlined_panels:
             src = node.inputs[0].source if node.inputs else None
             target = node.nickname if _valid_ident(node.nickname) else None
@@ -148,10 +155,26 @@ def to_python(graph: Graph) -> str:
     return "\n".join(lines) + ("\n" if lines else "")
 
 
-def _render_op(node: Node, ref, used_output_index) -> str:
+def _literal(internal) -> str:
+    """Render a typed-in (persistent) input value as Python."""
+    if internal is None:
+        return "None"
+    v = internal.value
+    if v is None:
+        return f'internal("{internal.kind}")'   # geometry/plane/etc.: placeholder
+    if isinstance(v, bool):
+        return "True" if v else "False"
+    if isinstance(v, int):
+        return str(v)
+    if isinstance(v, float):
+        return _fmt_number(v)
+    return repr(v)
+
+
+def _render_op(node: Node, arg, used_output_index) -> str:
     key = NAME_TO_KEY.get(node.component_name)
-    a = ref(node.inputs[0].source) if node.inputs else "None"
-    b = ref(node.inputs[1].source) if len(node.inputs) > 1 else "None"
+    a = arg(node.inputs[0]) if node.inputs else "None"
+    b = arg(node.inputs[1]) if len(node.inputs) > 1 else "None"
 
     if key in _BINOP_SYMBOL:
         return f"({a} {_BINOP_SYMBOL[key]} {b})"
@@ -167,12 +190,12 @@ def _render_op(node: Node, ref, used_output_index) -> str:
     if key == "not":
         return f"(not {a})"
     if key in ("point", "vector"):
-        coords = ", ".join(ref(ip.source) for ip in node.inputs)
+        coords = ", ".join(arg(ip) for ip in node.inputs)
         return f"({coords})" if key == "point" else f"vector({coords})"
     if key == "merge":
-        items = ", ".join(ref(ip.source) for ip in node.inputs)
+        items = ", ".join(arg(ip) for ip in node.inputs)
         return f"[{items}]"
 
     # No native mapping: emit a placeholder call so the program stays complete.
-    args = ", ".join(ref(ip.source) for ip in node.inputs)
+    args = ", ".join(arg(ip) for ip in node.inputs)
     return f'gh("{node.component_name}", {args})  # component has no native Python form'

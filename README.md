@@ -34,7 +34,10 @@ Grasshopper — `File ▸ Save As` — and either mode reads it.)
 reconstruction (`examples/truss2d.py`) are checked in to show the reverse
 pipeline on a non-trivial definition. Native geometry/solid components
 (Divide Curve, Iso Curve, Pipe, Solid Union, …) surface as `gh(...)`
-placeholders; the dataflow, slider values, and multi-output wiring all survive.
+placeholders; the dataflow, slider values, typed-in (persistent) input values,
+and multi-output wiring all survive. Geometry typed directly into an input
+(rather than wired) shows as `internal("<gh-type>")`, since decoding the
+OpenNURBS blob needs `rhino3dm`.
 
 ## How it works
 

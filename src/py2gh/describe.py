@@ -62,11 +62,19 @@ def describe(graph: Graph) -> str:
         lines.append("  (none)")
     lines.append("")
 
+    def in_label(ip) -> str:
+        if ip.source is not None:
+            return src_label(ip.source)
+        if ip.persistent is not None:
+            p = ip.persistent
+            return str(p.value) if p.value is not None else f"<{p.kind}>"
+        return "—"
+
     lines.append("Operations:")
     if ops:
         for n in ops:
             wired = "  ".join(
-                f"{ip.name}={src_label(ip.source)}" for ip in n.inputs
+                f"{ip.name}={in_label(ip)}" for ip in n.inputs
             ) or "(no inputs)"
             tag = "  [geometry]" if _is_geometry(n.component_name) else ""
             lines.append(f"  {label(n)} {n.component_name}{tag}")

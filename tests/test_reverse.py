@@ -173,3 +173,39 @@ def test_multi_output_source_is_disambiguated():
 
     py = to_python(g)
     assert "[1]" in py
+
+
+def test_persistent_scalar_is_read_and_rendered():
+    """An unwired input with a typed-in number (PersistentData) should surface
+    that value as a literal rather than None."""
+    op = _obj(
+        0, "cccc-op-type", "Some Op",
+        '<items count="2">'
+        '<item name="InstanceGuid" type_name="gh_guid" type_code="9">33333333-3333-3333-3333-333333333333</item>'
+        '<item name="NickName" type_name="gh_string" type_code="10"></item>'
+        '</items>'
+        '<chunks count="1"><chunk name="param_input" index="0">'
+        '<items count="1">'
+        '<item name="Name" type_name="gh_string" type_code="10">Factor</item>'
+        '</items>'
+        '<chunks count="1"><chunk name="PersistentData">'
+        '<items count="1"><item name="Count" type_name="gh_int32" type_code="3">1</item></items>'
+        '<chunks count="1"><chunk name="Branch" index="0">'
+        '<items count="2">'
+        '<item name="Count" type_name="gh_int32" type_code="3">1</item>'
+        '<item name="Path" type_name="gh_string" type_code="10">{0}</item>'
+        '</items>'
+        '<chunks count="1"><chunk name="Item" index="0">'
+        '<items count="1"><item name="Factor" type_name="gh_double" type_code="6">3.5</item></items>'
+        '</chunk></chunks>'   # close Item
+        '</chunk></chunks>'   # close Branch
+        '</chunk></chunks>'   # close PersistentData
+        '</chunk></chunks>',  # close param_input
+    )
+    from py2gh.decompile import to_python
+
+    g = read(_minimal_archive(op))   # ObjectCount says 2 but only 1 object: reader ignores the count
+    node = g.nodes[0]
+    assert node.inputs[0].persistent is not None
+    assert node.inputs[0].persistent.value == 3.5
+    assert "3.5" in to_python(g)

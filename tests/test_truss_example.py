@@ -43,3 +43,15 @@ def test_most_wired_inputs_resolve():
 def test_multi_output_components_are_dereferenced():
     # Deconstruct/End Points feed coordinate constructors via specific outputs.
     assert "[1]" in decompile_ghx(_ghx())
+
+
+def test_persistent_values_replace_none_placeholders():
+    """Most unwired inputs carry typed-in scalars; reading them should leave
+    only a handful of genuinely empty inputs."""
+    g = read(_ghx())
+    typed = [ip for n in g.nodes for ip in n.inputs
+             if ip.source is None and ip.persistent is not None
+             and ip.persistent.value is not None]
+    assert len(typed) >= 12            # the bulk of the unwired scalar inputs
+    py = decompile_ghx(_ghx())
+    assert "False" in py and "0.0" in py   # Closed=False, Z=0.0, etc.

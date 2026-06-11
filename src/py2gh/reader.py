@@ -24,7 +24,7 @@ from __future__ import annotations
 import xml.etree.ElementTree as ET
 
 from .components import PANEL, SLIDER
-from .ir import Graph, InPort, Node, NodeKind, OutPort
+from .ir import Graph, Internal, InPort, Node, NodeKind, OutPort
 
 
 # -- XML navigation helpers -------------------------------------------------
@@ -82,6 +82,44 @@ def _to_float(text: str, default: float = 0.0) -> float:
         return float(text)
     except (TypeError, ValueError):
         return default
+
+
+# Leaf GH types that carry a directly usable Python scalar.
+_SCALAR = {
+    "gh_double": lambda t: float(t),
+    "gh_int32": lambda t: int(t),
+    "gh_bool": lambda t: t.strip().lower() == "true",
+    "gh_string": lambda t: t,
+}
+
+
+def _persistent(param_chunk: ET.Element) -> Internal | None:
+    """Read a typed-in value stored on an unwired input (PersistentData chunk).
+
+    Returns the first scalar found (the common single-value case); for geometry
+    or other non-scalar data, returns an Internal naming the GH type so callers
+    can show a placeholder instead of a wrong value."""
+    pd = _chunk(param_chunk, "PersistentData")
+    if pd is None:
+        return None
+    leaves: list[tuple[str, str]] = []
+    for branch in _chunks(pd, "Branch"):
+        for item in _chunks(branch, "Item"):
+            items = item.find("items")
+            if items is None:
+                continue
+            for it in items.findall("item"):
+                leaves.append((it.get("type_name", ""), (it.text or "").strip()))
+    if not leaves:
+        return None
+    type_name, text = leaves[0]
+    coerce = _SCALAR.get(type_name)
+    if coerce is not None:
+        try:
+            return Internal(type_name, coerce(text), count=len(leaves))
+        except (TypeError, ValueError):
+            return Internal(type_name, None, count=len(leaves))
+    return Internal(type_name, None, count=len(leaves))   # geometry / plane / ...
 
 
 # -- the reader -------------------------------------------------------------
@@ -150,6 +188,7 @@ def _read_object(obj, wire_index, pending) -> Node | None:
         for pin in _chunks(container, "param_input"):
             pinfo = _items(pin)
             inp = InPort(node, pinfo.get("Name", ""), pinfo.get("InstanceGuid", ""))
+            inp.persistent = _persistent(pin)
             node.inputs.append(inp)
             pending.append((inp, _sources(pin)))
         for pout in _chunks(container, "param_output"):

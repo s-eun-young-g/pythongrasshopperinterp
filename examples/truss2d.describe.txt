@@ -17,7 +17,7 @@ Operations:
   [2] Curve  [geometry]
       (no inputs)
   [3] Divide Curve  [geometry]
-      Curve=[2] Curve  Count=number of columns  Kinks=—
+      Curve=[2] Curve  Count=number of columns  Kinks=False
   [4] Line  [geometry]
       Start Point=[12] Construct Point  End Point=[13] Construct Point
   [5] End Points  [geometry]
@@ -25,7 +25,7 @@ Operations:
   [6] Extremes
       Curve=[2] Curve  Plane=[7] Unit Z
   [7] Unit Z
-      Factor=—
+      Factor=1.0
   [8] Deconstruct
       Point=[6] Extremes
   [9] Subtraction
@@ -35,25 +35,25 @@ Operations:
   [11] Deconstruct
       Point=[5] End Points
   [12] Construct Point  [geometry]
-      X coordinate=[10] Deconstruct  Y coordinate=[10] Deconstruct  Z coordinate=—
+      X coordinate=[10] Deconstruct  Y coordinate=[10] Deconstruct  Z coordinate=0.0
   [13] Construct Point  [geometry]
-      X coordinate=[11] Deconstruct  Y coordinate=[11] Deconstruct  Z coordinate=—
+      X coordinate=[11] Deconstruct  Y coordinate=[11] Deconstruct  Z coordinate=0.0
   [14] Iso Curve  [geometry]
       Surface=[1] Surface  UV point=[15] Construct Point
   [15] Construct Point  [geometry]
-      X coordinate=[16] Range  Y coordinate=[16] Range  Z coordinate=—
+      X coordinate=[16] Range  Y coordinate=[16] Range  Z coordinate=0.0
   [16] Range
-      Domain=—  Steps=number of trusses
+      Domain=<gh_interval1d>  Steps=number of trusses
   [17] Divide Curve  [geometry]
-      Curve=—  Count=number of columns  Kinks=—
+      Curve=—  Count=number of columns  Kinks=False
   [18] Line  [geometry]
       Start Point=[3] Divide Curve  End Point=[27] Construct Point
   [19] Cull Index
-      List=[3] Divide Curve  Indices=[20] Number  Wrap=—
+      List=[3] Divide Curve  Indices=[20] Number  Wrap=True
   [20] Number
       (no inputs)
   [21] PolyLine  [geometry]
-      Vertices=[3] Divide Curve  Closed=—
+      Vertices=[3] Divide Curve  Closed=False
   [22] Line  [geometry]
       Start Point=[19] Cull Index  End Point=[32] Cull Index
   [23] Stream Filter
@@ -67,27 +67,27 @@ Operations:
   [27] Construct Point  [geometry]
       X coordinate=[26] Deconstruct  Y coordinate=[26] Deconstruct  Z coordinate=[25] Deconstruct
   [28] Offset Surface  [geometry]
-      Surface=[1] Surface  Distance=[24] Negative  Retrim=—
+      Surface=[1] Surface  Distance=[24] Negative  Retrim=True
   [29] Iso Curve  [geometry]
       Surface=[28] Offset Surface  UV point=[15] Construct Point
   [30] Curve  [geometry]
       (no inputs)
   [31] PolyLine  [geometry]
-      Vertices=[27] Construct Point  Closed=—
+      Vertices=[27] Construct Point  Closed=False
   [32] Cull Index
-      List=[27] Construct Point  Indices=Number Slider  Wrap=—
+      List=[27] Construct Point  Indices=Number Slider  Wrap=True
   [33] Join Curves  [geometry]
-      Curves=[21] PolyLine  Preserve=—
+      Curves=[21] PolyLine  Preserve=False
   [34] Join Curves  [geometry]
-      Curves=[31] PolyLine  Preserve=—
+      Curves=[31] PolyLine  Preserve=False
   [35] Join Curves  [geometry]
-      Curves=[33] Join Curves  Preserve=—
+      Curves=[33] Join Curves  Preserve=False
   [36] Pipe
       Curve=[38] Flatten Tree  Radius=Number Slider  Caps=Number Slider
   [37] Solid Union
       Breps=[36] Pipe
   [38] Flatten Tree
-      Tree=[35] Join Curves  Path=—
+      Tree=[35] Join Curves  Path={0}
 
 Geometry / shapes:
   [1] Surface
