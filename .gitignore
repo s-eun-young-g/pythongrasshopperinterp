@@ -9,4 +9,5 @@ dist/
 venv/
 *.ghx
 !tests/reference_simple_math.ghx
+!examples/*.ghx
 .DS_Store

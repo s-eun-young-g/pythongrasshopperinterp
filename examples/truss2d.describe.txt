@@ -1,0 +1,137 @@
+py2gh — definition description
+================================
+Objects: 45  (sliders: 7, operations: 38, panels: 0)
+
+Parametric inputs (Number Sliders):
+  number of columns  = 8        [0 .. 50]
+  number of trusses  = 5        [1 .. 20]
+  straight or curved = 0        [0 .. 1]
+  const              = 0        [0 .. 1]
+  const              = 1        [0 .. 1]
+  const              = 0.9      [0 .. 0.9]
+  const              = 0.02     [0 .. 0.09]
+
+Operations:
+  [1] Surface  [geometry]
+      (no inputs)
+  [2] Curve  [geometry]
+      (no inputs)
+  [3] Divide Curve  [geometry]
+      Curve=[2] Curve  Count=number of columns  Kinks=—
+  [4] Line  [geometry]
+      Start Point=[12] Construct Point  End Point=[13] Construct Point
+  [5] End Points  [geometry]
+      Curve=[2] Curve
+  [6] Extremes
+      Curve=[2] Curve  Plane=[7] Unit Z
+  [7] Unit Z
+      Factor=—
+  [8] Deconstruct
+      Point=[6] Extremes
+  [9] Subtraction
+      (no inputs)
+  [10] Deconstruct
+      Point=[5] End Points
+  [11] Deconstruct
+      Point=[5] End Points
+  [12] Construct Point  [geometry]
+      X coordinate=[10] Deconstruct  Y coordinate=[10] Deconstruct  Z coordinate=—
+  [13] Construct Point  [geometry]
+      X coordinate=[11] Deconstruct  Y coordinate=[11] Deconstruct  Z coordinate=—
+  [14] Iso Curve  [geometry]
+      Surface=[1] Surface  UV point=[15] Construct Point
+  [15] Construct Point  [geometry]
+      X coordinate=[16] Range  Y coordinate=[16] Range  Z coordinate=—
+  [16] Range
+      Domain=—  Steps=number of trusses
+  [17] Divide Curve  [geometry]
+      Curve=—  Count=number of columns  Kinks=—
+  [18] Line  [geometry]
+      Start Point=[3] Divide Curve  End Point=[27] Construct Point
+  [19] Cull Index
+      List=[3] Divide Curve  Indices=[20] Number  Wrap=—
+  [20] Number
+      (no inputs)
+  [21] PolyLine  [geometry]
+      Vertices=[3] Divide Curve  Closed=—
+  [22] Line  [geometry]
+      Start Point=[19] Cull Index  End Point=[32] Cull Index
+  [23] Stream Filter
+      (no inputs)
+  [24] Negative
+      Value=Number Slider
+  [25] Deconstruct
+      Point=[17] Divide Curve
+  [26] Deconstruct
+      Point=[3] Divide Curve
+  [27] Construct Point  [geometry]
+      X coordinate=[26] Deconstruct  Y coordinate=[26] Deconstruct  Z coordinate=[25] Deconstruct
+  [28] Offset Surface  [geometry]
+      Surface=[1] Surface  Distance=[24] Negative  Retrim=—
+  [29] Iso Curve  [geometry]
+      Surface=[28] Offset Surface  UV point=[15] Construct Point
+  [30] Curve  [geometry]
+      (no inputs)
+  [31] PolyLine  [geometry]
+      Vertices=[27] Construct Point  Closed=—
+  [32] Cull Index
+      List=[27] Construct Point  Indices=Number Slider  Wrap=—
+  [33] Join Curves  [geometry]
+      Curves=[21] PolyLine  Preserve=—
+  [34] Join Curves  [geometry]
+      Curves=[31] PolyLine  Preserve=—
+  [35] Join Curves  [geometry]
+      Curves=[33] Join Curves  Preserve=—
+  [36] Pipe
+      Curve=[38] Flatten Tree  Radius=Number Slider  Caps=Number Slider
+  [37] Solid Union
+      Breps=[36] Pipe
+  [38] Flatten Tree
+      Tree=[35] Join Curves  Path=—
+
+Geometry / shapes:
+  [1] Surface
+  [2] Curve
+  [3] Divide Curve
+  [4] Line
+  [5] End Points
+  [12] Construct Point
+  [13] Construct Point
+  [14] Iso Curve
+  [15] Construct Point
+  [17] Divide Curve
+  [18] Line
+  [21] PolyLine
+  [22] Line
+  [27] Construct Point
+  [28] Offset Surface
+  [29] Iso Curve
+  [30] Curve
+  [31] PolyLine
+  [33] Join Curves
+  [34] Join Curves
+  [35] Join Curves
+
+Outputs (Panels):
+  (none)
+
+Components without a native Python mapping (emitted as gh(...) on decompile):
+  - Cull Index
+  - Curve
+  - Deconstruct
+  - Divide Curve
+  - End Points
+  - Extremes
+  - Flatten Tree
+  - Iso Curve
+  - Join Curves
+  - Line
+  - Number
+  - Offset Surface
+  - Pipe
+  - PolyLine
+  - Range
+  - Solid Union
+  - Stream Filter
+  - Surface
+  - Unit Z

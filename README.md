@@ -29,6 +29,13 @@ py2gh --to-python  truss2d.ghx -o out.py  # best-effort Python reconstruction
 (A binary `.gh` is the same data model as a `.ghx`; export `.ghx` from
 Grasshopper — `File ▸ Save As` — and either mode reads it.)
 
+`examples/truss2d.ghx` is a real 45-component parametric 2D truss; its
+`--describe` inventory (`examples/truss2d.describe.txt`) and `--to-python`
+reconstruction (`examples/truss2d.py`) are checked in to show the reverse
+pipeline on a non-trivial definition. Native geometry/solid components
+(Divide Curve, Iso Curve, Pipe, Solid Union, …) surface as `gh(...)`
+placeholders; the dataflow, slider values, and multi-output wiring all survive.
+
 ## How it works
 
 ```
