@@ -22,6 +22,7 @@ def _is_geometry(name: str) -> bool:
 
 def describe(graph: Graph) -> str:
     sliders = [n for n in graph.nodes if n.kind is NodeKind.SLIDER]
+    toggles = [n for n in graph.nodes if n.kind is NodeKind.TOGGLE]
     panels = [n for n in graph.nodes if n.kind is NodeKind.PANEL]
     ops = [n for n in graph.nodes if n.kind is NodeKind.OP]
 
@@ -45,9 +46,16 @@ def describe(graph: Graph) -> str:
     lines.append("=" * 32)
     lines.append(
         f"Objects: {len(graph.nodes)}  "
-        f"(sliders: {len(sliders)}, operations: {len(ops)}, panels: {len(panels)})"
+        f"(sliders: {len(sliders)}, toggles: {len(toggles)}, "
+        f"operations: {len(ops)}, panels: {len(panels)})"
     )
     lines.append("")
+
+    if toggles:
+        lines.append("Boolean toggles:")
+        for t in toggles:
+            lines.append(f"  {t.nickname or 'toggle'} = {bool(t.data.get('value', False))}")
+        lines.append("")
 
     lines.append("Parametric inputs (Number Sliders):")
     if sliders:

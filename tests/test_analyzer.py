@@ -65,7 +65,6 @@ def test_math_call_lowers_to_component():
     "for i in range(3): pass\n",  # control flow
     "a, b = 1, 2\n",            # tuple unpacking
     "y = foo(1)\n",             # unknown call
-    "y = True\n",               # boolean literal (no toggle emitter yet)
     "y = (1 < 2 < 3)\n",        # chained comparison
     "y = (1, 2, 3, 4)\n",       # 4-tuple is not a point/vector
     "y = []\n",                 # empty list
@@ -73,6 +72,15 @@ def test_math_call_lowers_to_component():
 def test_unsupported_raises(src):
     with pytest.raises(UnsupportedPython):
         analyze(src)
+
+
+def test_boolean_literal_becomes_toggle():
+    from py2gh.ir import NodeKind
+    g = analyze("flag = True\n")
+    toggles = [n for n in g.nodes if n.kind is NodeKind.TOGGLE]
+    assert len(toggles) == 1
+    assert toggles[0].data["value"] is True
+    assert toggles[0].nickname == "flag"
 
 
 def test_undefined_name_raises():

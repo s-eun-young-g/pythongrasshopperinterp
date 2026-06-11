@@ -23,7 +23,7 @@ from __future__ import annotations
 
 import xml.etree.ElementTree as ET
 
-from .components import PANEL, SLIDER
+from .components import PANEL, SLIDER, TOGGLE
 from .ir import Graph, Internal, InPort, Node, NodeKind, OutPort
 
 
@@ -173,6 +173,13 @@ def _read_object(obj, wire_index, pending) -> Node | None:
             "max": _to_float(sinfo.get("Max", "0")),
         }
         out = OutPort(node, "value", iguid)   # slider's wire guid is its own
+        node.outputs.append(out)
+        wire_index[iguid] = out
+
+    elif ctype == TOGGLE.guid:
+        node = Node(NodeKind.TOGGLE, cname, ctype, iguid, nickname=nick)
+        node.data = {"value": cinfo.get("Value", "false").strip().lower() == "true"}
+        out = OutPort(node, "value", iguid)   # toggle's wire guid is its own
         node.outputs.append(out)
         wire_index[iguid] = out
 

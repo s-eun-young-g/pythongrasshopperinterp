@@ -43,13 +43,14 @@ import uuid
 from dataclasses import dataclass, field
 from enum import Enum
 
-from .components import PANEL, SLIDER, ComponentSpec
+from .components import PANEL, SLIDER, TOGGLE, ComponentSpec
 
 
 class NodeKind(Enum):
     OP = "op"          # a regular component with input/output params
     SLIDER = "slider"  # a Number Slider (a source; no inputs)
     PANEL = "panel"    # a Panel (a sink; one text input, no outputs)
+    TOGGLE = "toggle"  # a Boolean Toggle (a boolean source; no inputs)
 
 
 @dataclass
@@ -153,6 +154,14 @@ class Graph:
             "min": min(0.0, float(value)),
             "max": max(10.0, float(value)),
         }
+        return self._register(node)
+
+    def add_toggle(self, value: bool, nickname: str = "") -> Node:
+        """Add a Boolean Toggle (a True/False source)."""
+        node = Node(NodeKind.TOGGLE, TOGGLE.name, TOGGLE.guid, self.new_guid(),
+                    nickname=nickname)
+        node.outputs.append(OutPort(node, "value", self.new_guid()))
+        node.data = {"value": bool(value)}
         return self._register(node)
 
     def add_panel(self, nickname: str = "") -> Node:

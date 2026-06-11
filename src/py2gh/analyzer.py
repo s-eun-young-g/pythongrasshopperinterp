@@ -84,8 +84,7 @@ class _Analyzer:
             return self._list(node)
 
         if isinstance(node, ast.Constant) and isinstance(node.value, bool):
-            raise UnsupportedPython(
-                node, "boolean literals are not supported yet (no Boolean Toggle emitter)")
+            return self.graph.add_toggle(node.value).out
 
         raise UnsupportedPython(node, f"unsupported expression: {type(node).__name__}")
 
@@ -148,24 +147,30 @@ class _Analyzer:
 
     def _call(self, node: ast.Call) -> OutPort:
         name = _call_name(node.func)
+        if name is None:
+            raise UnsupportedPython(node, "unsupported call expression")
 
         # point(x, y[, z]) / vector(x, y[, z]) -> a geometry constructor.
-        ctor = components.CONSTRUCTOR_MAP.get(name) if name else None
+        ctor = components.CONSTRUCTOR_MAP.get(name)
         if ctor is not None:
             if node.keywords:
                 raise UnsupportedPython(node, f"{name}() does not accept keyword arguments")
             return self._construct(ctor, node.args, node)
 
-        # Unary maths: sin/cos/sqrt/abs.
-        key = components.CALL_MAP.get(name) if name else None
-        if key is None:
-            raise UnsupportedPython(node, f"unsupported call: {name or '<expr>'}()")
-        if len(node.args) != 1 or node.keywords:
-            raise UnsupportedPython(node, f"{name}() expects exactly one positional argument")
-        arg = self.expr(node.args[0])
-        comp = self.graph.add_op(components.get(key))
-        comp.inputs[0].connect(arg)
-        return comp.out
+        # Any callable component: maths (sin/cos/...) and geometry (line, ...).
+        if name in components.CALLABLE_KEYS:
+            if node.keywords:
+                raise UnsupportedPython(node, f"{name}() does not accept keyword arguments")
+            spec = components.get(name)
+            if len(node.args) > len(spec.inputs):
+                raise UnsupportedPython(
+                    node, f"{name}() takes at most {len(spec.inputs)} argument(s), got {len(node.args)}")
+            comp = self.graph.add_op(spec)
+            for arg_node, inp in zip(node.args, comp.inputs):
+                inp.connect(self.expr(arg_node))
+            return comp.out
+
+        raise UnsupportedPython(node, f"unsupported call: {name}()")
 
     def _construct(self, key: str, elts: list[ast.AST], node: ast.AST) -> OutPort:
         """Build a Construct Point / Vector XYZ from 2 or 3 coordinates,
@@ -217,6 +222,8 @@ class _Analyzer:
         elif isinstance(value, ast.UnaryOp) and isinstance(value.op, ast.USub) \
                 and _is_number(value.operand):
             port = self.graph.add_slider(-value.operand.value, nickname=name).out
+        elif isinstance(value, ast.Constant) and isinstance(value.value, bool):
+            port = self.graph.add_toggle(value.value, nickname=name).out
         else:
             port = self.expr(value)
         self.env[name] = port

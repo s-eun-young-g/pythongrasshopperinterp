@@ -1,6 +1,6 @@
 py2gh — definition description
 ================================
-Objects: 45  (sliders: 7, operations: 38, panels: 0)
+Objects: 45  (sliders: 7, toggles: 0, operations: 38, panels: 0)
 
 Parametric inputs (Number Sliders):
   number of columns  = 8        [0 .. 50]
@@ -116,22 +116,10 @@ Outputs (Panels):
   (none)
 
 Components without a native Python mapping (emitted as gh(...) on decompile):
-  - Cull Index
   - Curve
-  - Deconstruct
-  - Divide Curve
-  - End Points
   - Extremes
   - Flatten Tree
-  - Iso Curve
-  - Join Curves
-  - Line
   - Number
-  - Offset Surface
-  - Pipe
-  - PolyLine
   - Range
-  - Solid Union
   - Stream Filter
   - Surface
-  - Unit Z

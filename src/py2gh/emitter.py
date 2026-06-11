@@ -138,7 +138,7 @@ def _attributes(x, y, w, h) -> Chunk:
 def _wire_guid(out: OutPort) -> str:
     # A slider/param has no child output param -- it IS the output, so cite the
     # node. A component cites its param_output's own InstanceGuid.
-    if out.node.kind in (NodeKind.SLIDER, NodeKind.PANEL):
+    if out.node.kind in (NodeKind.SLIDER, NodeKind.PANEL, NodeKind.TOGGLE):
         return out.node.instance_guid
     return out.instance_guid
 
@@ -240,6 +240,23 @@ def _container_slider(node: Node) -> Chunk:
     return cont
 
 
+def _container_toggle(node: Node) -> Chunk:
+    # Best-effort serialization (no real Boolean Toggle export to validate
+    # against): a parameter container carrying its boolean state.
+    px, py = node.pivot
+    value = bool(node.data.get("value", False))
+    cont = Chunk("Container")
+    cont.add(_str("Description", "Boolean (true/false) toggle"),
+             _guid("InstanceGuid", node.instance_guid),
+             _str("Name", node.component_name),
+             _str("NickName", node.nickname or ""),
+             _bool("Optional", False),
+             _int("SourceCount", 0),
+             _bool("Value", value))
+    cont.chunk(_attributes(px, py, 100.0, 20.0))
+    return cont
+
+
 def _container_panel(node: Node) -> Chunk:
     px, py = node.pivot
     ip = node.inputs[0]
@@ -277,6 +294,8 @@ def _object_chunk(node: Node, index: int) -> Chunk:
         obj.chunk(_container_op(node))
     elif node.kind is NodeKind.SLIDER:
         obj.chunk(_container_slider(node))
+    elif node.kind is NodeKind.TOGGLE:
+        obj.chunk(_container_toggle(node))
     elif node.kind is NodeKind.PANEL:
         obj.chunk(_container_panel(node))
     return obj

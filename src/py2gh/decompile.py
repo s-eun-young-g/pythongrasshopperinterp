@@ -24,7 +24,6 @@ from .ir import Graph, Node, NodeKind, OutPort
 NAME_TO_KEY: dict[str, str] = {spec.name: spec.key for spec in components.REGISTRY.values()}
 
 _BINOP_SYMBOL = {"add": "+", "sub": "-", "mul": "*", "div": "/", "pow": "**", "mod": "%"}
-_FUNC_NAME = {"sin": "sin", "cos": "cos", "sqrt": "sqrt", "abs": "abs"}
 # (registry key, consumed output index) -> Python comparison operator
 _COMPARE_SYMBOL = {
     ("smaller", 0): "<", ("smaller", 1): "<=",
@@ -68,15 +67,15 @@ def to_python(graph: Graph) -> str:
         used.add(name)
         return name
 
-    # 1) Number sliders become named literals.
-    counter = {"slider": 0}
+    # 1) Number sliders and boolean toggles become named literals.
+    counter = {"v": 0}
     for node in graph.nodes:
-        if node.kind is NodeKind.SLIDER:
+        if node.kind in (NodeKind.SLIDER, NodeKind.TOGGLE):
             if _valid_ident(node.nickname):
                 node_var[id(node)] = claim(node.nickname)
             else:
-                counter["slider"] += 1
-                node_var[id(node)] = claim(f"v{counter['slider']}")
+                counter["v"] += 1
+                node_var[id(node)] = claim(f"v{counter['v']}")
 
     # 2) An op feeding exactly one panel takes that panel's name (so the result
     #    reads `area = a + b` instead of a throwaway temp plus a panel line).
@@ -142,6 +141,8 @@ def to_python(graph: Graph) -> str:
     for node in order:
         if node.kind is NodeKind.SLIDER:
             lines.append(f"{node_var[id(node)]} = {_fmt_number(node.data.get('value', 0.0))}")
+        elif node.kind is NodeKind.TOGGLE:
+            lines.append(f"{node_var[id(node)]} = {'True' if node.data.get('value') else 'False'}")
         elif node.kind is NodeKind.OP:
             lines.append(f"{node_var[id(node)]} = {_render_op(node, arg, used_output_index)}")
         elif node.kind is NodeKind.PANEL and id(node) not in inlined_panels:
@@ -180,8 +181,9 @@ def _render_op(node: Node, arg, used_output_index) -> str:
         return f"({a} {_BINOP_SYMBOL[key]} {b})"
     if key == "neg":
         return f"(-{a})"
-    if key in _FUNC_NAME:
-        return f"{_FUNC_NAME[key]}({a})"
+    if key in components.CALLABLE_KEYS:        # maths (sin/...) + geometry (line/...)
+        call_args = ", ".join(arg(ip) for ip in node.inputs)
+        return f"{key}({call_args})"
     if key in ("smaller", "larger", "equal"):
         sym = _COMPARE_SYMBOL[(key, used_output_index(node))]
         return f"({a} {sym} {b})"

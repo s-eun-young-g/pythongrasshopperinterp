@@ -78,9 +78,15 @@ Supported Python:
 - **comparisons** `< <= > >= == !=` (each lowers to a Larger/Smaller/Equality
   component; the `…=` forms reuse the component's second boolean output)
 - **booleans** `and`, `or`, `not` (→ Gate And/Or/Not; chains fold pairwise)
+- **boolean literals** `True` / `False` → Boolean Toggle
 - **tuples** `(x, y[, z])` → Construct Point, and `vector(x, y, z)` → Vector XYZ
   (a 2-tuple pads Z with a zero slider)
 - **list literals** `[a, b, c]` → a Merge component (a Grasshopper list)
+- **geometry / utility calls** — `line`, `polyline`, `divide_curve`, `end_points`,
+  `deconstruct`, `iso_curve`, `join_curves`, `offset_surface`, `pipe`,
+  `solid_union`, `unit_z`, `cull_index` map to their components both ways, so a
+  small truss can be written directly in Python (see `examples/mini_truss.py`)
+  and the same calls round-trip back out of a `.ghx`
 
 Unsupported constructs (control flow, multi-target assignment, boolean literals,
 chained comparisons, unknown calls) raise a clear error with a line number.

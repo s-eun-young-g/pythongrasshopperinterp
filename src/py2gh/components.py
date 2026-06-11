@@ -80,8 +80,27 @@ _GEOMETRY = [
     ComponentSpec("merge",  "Merge",           "VERIFY-merge-guid",           ("D1",), ("R",)),
 ]
 
+# Components usable as Python function calls: `key(args...)` <-> component, in
+# both directions. The registry `key` IS the Python function name, so decompiling
+# renders `line(a, b)` and analyzing `line(a, b)` rebuilds the component. Port
+# names are best-effort (they only affect display); GUIDs need harvesting.
+_CALLABLES = [
+    ComponentSpec("line",          "Line",           "VERIFY-line-guid",           ("Start Point", "End Point"),   ("Line",)),
+    ComponentSpec("polyline",      "PolyLine",       "VERIFY-polyline-guid",       ("Vertices", "Closed"),         ("Polyline",)),
+    ComponentSpec("divide_curve",  "Divide Curve",   "VERIFY-divide-curve-guid",   ("Curve", "Count", "Kinks"),    ("Points", "Tangents", "Parameters")),
+    ComponentSpec("end_points",    "End Points",     "VERIFY-end-points-guid",     ("Curve",),                     ("Start", "End")),
+    ComponentSpec("deconstruct",   "Deconstruct",    "VERIFY-deconstruct-guid",    ("Point",),                     ("X component", "Y component", "Z component")),
+    ComponentSpec("iso_curve",     "Iso Curve",      "VERIFY-iso-curve-guid",      ("Surface", "UV Point"),        ("U", "V")),
+    ComponentSpec("join_curves",   "Join Curves",    "VERIFY-join-curves-guid",    ("Curves", "Preserve"),         ("Curves",)),
+    ComponentSpec("offset_surface","Offset Surface", "VERIFY-offset-surface-guid", ("Surface", "Distance", "Both Sides"), ("Surface",)),
+    ComponentSpec("pipe",          "Pipe",           "VERIFY-pipe-guid",           ("Curve", "Radius", "Caps"),    ("Pipe",)),
+    ComponentSpec("solid_union",   "Solid Union",    "VERIFY-solid-union-guid",    ("Breps",),                     ("Result",)),
+    ComponentSpec("unit_z",        "Unit Z",         "VERIFY-unit-z-guid",         ("Factor",),                    ("Unit vector",)),
+    ComponentSpec("cull_index",    "Cull Index",     "VERIFY-cull-index-guid",     ("List", "Indices", "Wrap"),    ("List",)),
+]
+
 REGISTRY: dict[str, ComponentSpec] = {
-    c.key: c for c in (_OPERATORS + _FUNCTIONS + _COMPARISONS + _LOGIC + _GEOMETRY)
+    c.key: c for c in (_OPERATORS + _FUNCTIONS + _COMPARISONS + _LOGIC + _GEOMETRY + _CALLABLES)
 }
 
 # Well-known special components used as graph sources/sinks.
@@ -92,6 +111,12 @@ SLIDER = ComponentSpec(
 PANEL = ComponentSpec(
     "panel", "Panel",
     "59e0b89a-e487-49f8-bab8-b5bab16be14c", ("text",), (), confirmed=True,
+)
+# Boolean Toggle: a boolean source, the True/False analogue of a Number Slider.
+# Serialization is best-effort (no real export to validate against) -> VERIFY.
+TOGGLE = ComponentSpec(
+    "toggle", "Boolean Toggle",
+    "VERIFY-boolean-toggle-guid", (), ("value",),
 )
 
 # Map Python AST operator class names -> registry keys.
@@ -114,6 +139,10 @@ COMPARE_MAP = {
 }
 # Call targets that build geometry from 2-3 coordinates -> registry keys.
 CONSTRUCTOR_MAP = {"point": "point", "vector": "vector", "vec": "vector"}
+# Keys callable as plain `name(args)` functions in both directions: unary maths
+# plus the geometry/utility components above. (point/vector/merge stay special:
+# they have tuple/list syntax, handled separately.)
+CALLABLE_KEYS = set(CALL_MAP) | {c.key for c in _CALLABLES}
 
 
 def get(key: str) -> ComponentSpec:
@@ -129,7 +158,7 @@ def get(key: str) -> ComponentSpec:
 def unverified() -> list[str]:
     """Keys whose GUIDs still need confirming against a real install."""
     bad = [k for k, c in REGISTRY.items() if not c.confirmed or "VERIFY" in c.guid]
-    for c in (SLIDER, PANEL):
-        if not c.confirmed:
+    for c in (SLIDER, PANEL, TOGGLE):
+        if not c.confirmed or "VERIFY" in c.guid:
             bad.append(c.key)
     return bad
