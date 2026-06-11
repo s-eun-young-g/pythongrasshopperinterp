@@ -18,12 +18,31 @@ area = half_perimeter * 2.0
 becomes a canvas of Number Sliders → Addition / Multiplication components → an
 output Panel.
 
+It also runs **in reverse** — read a `.ghx` back into a structured description or
+best-effort Python:
+
+```bash
+py2gh --describe   truss2d.ghx            # structured inventory of the definition
+py2gh --to-python  truss2d.ghx -o out.py  # best-effort Python reconstruction
+```
+
+(A binary `.gh` is the same data model as a `.ghx`; export `.ghx` from
+Grasshopper — `File ▸ Save As` — and either mode reads it.)
+
 ## How it works
 
 ```
 Python source ──▶ AST analyzer ──▶ IR graph ──▶ .ghx emitter ──▶ Grasshopper
                   (analyzer.py)    (ir.py)       (emitter.py)
+                                      ▲
+        Grasshopper ──▶ .ghx reader ──┘──▶ describe.py   (structured report)
+                        (reader.py)    └──▶ decompile.py  (best-effort Python)
 ```
+
+The IR graph is the hub: the reader rebuilds the *same* graph the emitter
+consumes, so forward and reverse share one model. Components with a native
+Python meaning decompile to real code; anything else becomes a `gh("Name", …)`
+placeholder so the output is always complete.
 
 The IR graph in the middle is the whole point: it decouples "what Python means"
 from "what a `.ghx` looks like," so either end can change independently and new
@@ -86,8 +105,11 @@ uses only confirmed components, so it opens cleanly; run
 - **M3 — control flow:** map list comprehensions to data-tree operations; detect
   regions that can't be lowered and wrap them in a single GhPython component
   (the "escape hatch") so any Python still round-trips.
-- **M4 — fidelity & UX:** auto-layout that doesn't overlap, groups/labels from
-  comments, round-trip (`.ghx` → Python) for testing, binary `.gh` output.
+- **M4 — fidelity & UX (in progress):** round-trip `.ghx` → Python is **done**
+  (`reader.py` + `describe.py` + `decompile.py`, `--describe` / `--to-python`),
+  reusing the IR so forward and reverse share one model. *Remaining:* auto-layout
+  that doesn't overlap, groups/labels from comments, binary `.gh` I/O (via
+  GH_IO.dll, so no manual `.ghx` export step).
 - **M5 — packaging:** PyPI release, optional Rhino.Compute hook to execute and
   screenshot the result for CI.
 

@@ -62,14 +62,21 @@ class OutPort:
 
 @dataclass
 class InPort:
-    """An input parameter. `source` is the upstream OutPort feeding it, if any."""
+    """An input parameter. `source` is the first upstream OutPort feeding it (what
+    the emitter writes); `sources` holds all of them, since a real Grasshopper
+    input can be wired to several outputs at once (e.g. a list collected from
+    many components). Forward construction connects exactly one; the reader may
+    connect many."""
     node: "Node"
     name: str
     instance_guid: str
     source: OutPort | None = None
+    sources: list[OutPort] = field(default_factory=list)
 
     def connect(self, out: OutPort) -> None:
-        self.source = out
+        if self.source is None:
+            self.source = out
+        self.sources.append(out)
 
 
 @dataclass
