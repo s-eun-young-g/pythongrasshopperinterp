@@ -41,15 +41,30 @@ ArchiveVersion 0.2.2). The Number Slider, Panel, and operator (container +
 item-for-item, and operator→operator wiring is verified to resolve through
 `param_output` GUIDs rather than node GUIDs.
 
-Supported Python: numeric literals (→ sliders), names, binary ops
-(`+ - * / ** %`), unary minus, and a small set of maths calls (`sin`, `cos`,
-`sqrt`, `abs`). Unsupported constructs raise a clear error.
+Supported Python:
+
+- numeric literals (→ sliders), names, unary minus
+- binary ops `+ - * / ** %`
+- maths calls `sin`, `cos`, `sqrt`, `abs`
+- **comparisons** `< <= > >= == !=` (each lowers to a Larger/Smaller/Equality
+  component; the `…=` forms reuse the component's second boolean output)
+- **booleans** `and`, `or`, `not` (→ Gate And/Or/Not; chains fold pairwise)
+- **tuples** `(x, y[, z])` → Construct Point, and `vector(x, y, z)` → Vector XYZ
+  (a 2-tuple pads Z with a zero slider)
+- **list literals** `[a, b, c]` → a Merge component (a Grasshopper list)
+
+Unsupported constructs (control flow, multi-target assignment, boolean literals,
+chained comparisons, unknown calls) raise a clear error with a line number.
 
 **Confirmed component GUIDs:** Addition, Multiplication, Negative, Number Slider,
-Panel. Still need harvesting (`py2gh --check-guids`): Subtraction, Division,
-Power, Modulus, Sine, Cosine, SquareRoot, Absolute. The bundled
-`examples/simple_math.py` uses only confirmed components, so it should open
-cleanly; run `tools/harvest_components.py` in Grasshopper to fill the rest.
+Panel. Still need harvesting (`py2gh --check-guids`): the remaining arithmetic
+(Subtraction, Division, Power, Modulus), trig (Sine, Cosine, SquareRoot,
+Absolute), and every component added in M2 (Larger/Smaller Than, Equality, Gate
+And/Or/Not, Construct Point, Vector XYZ, Merge). The structural machinery
+(graph, wiring, XML) is fully tested regardless; only whether Grasshopper can
+*resolve* an unconfirmed GUID is at stake. The bundled `examples/simple_math.py`
+uses only confirmed components, so it opens cleanly; run
+`tools/harvest_components.py` in Grasshopper to fill the rest.
 
 > Note: a wrong GUID floats around online for Multiplication
 > (`ce46b74e…`); the value read from a real file is `b8963bb1…`. This is exactly
@@ -64,8 +79,10 @@ cleanly; run `tools/harvest_components.py` in Grasshopper to fill the rest.
   `param_output` GUIDs; core GUIDs confirmed from a real file. *Remaining:*
   harvest the last operator/trig GUIDs, and the one thing that needs a machine
   with Rhino — actually opening the output in Rhino 8 to confirm round-trip.
-- **M2 — coverage:** comparisons & booleans, more maths/trig, tuples → points
-  /vectors, list literals → GH lists, `rhino3dm` geometry calls → geometry comps.
+- **M2 — coverage (in progress):** comparisons & booleans, tuples → points
+  /vectors, and list literals → GH lists are **done** (analyzer + IR + emitter,
+  fully tested). *Remaining:* harvest the new components' GUIDs, and add
+  `rhino3dm` geometry calls → geometry components.
 - **M3 — control flow:** map list comprehensions to data-tree operations; detect
   regions that can't be lowered and wrap them in a single GhPython component
   (the "escape hatch") so any Python still round-trips.

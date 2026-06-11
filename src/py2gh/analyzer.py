@@ -24,6 +24,7 @@ a name.
 from __future__ import annotations
 
 import ast
+from dataclasses import replace
 
 from . import components
 from .ir import Graph, OutPort
@@ -70,6 +71,22 @@ class _Analyzer:
         if isinstance(node, ast.Call):
             return self._call(node)
 
+        if isinstance(node, ast.Compare):
+            return self._compare(node)
+
+        if isinstance(node, ast.BoolOp):
+            return self._boolop(node)
+
+        if isinstance(node, ast.Tuple):
+            return self._construct("point", node.elts, node)
+
+        if isinstance(node, ast.List):
+            return self._list(node)
+
+        if isinstance(node, ast.Constant) and isinstance(node.value, bool):
+            raise UnsupportedPython(
+                node, "boolean literals are not supported yet (no Boolean Toggle emitter)")
+
         raise UnsupportedPython(node, f"unsupported expression: {type(node).__name__}")
 
     def _binop(self, node: ast.BinOp) -> OutPort:
@@ -96,10 +113,50 @@ class _Analyzer:
             comp = self.graph.add_op(components.get("neg"))
             comp.inputs[0].connect(operand)
             return comp.out
+        if isinstance(node.op, ast.Not):
+            operand = self.expr(node.operand)
+            comp = self.graph.add_op(components.get("not"))
+            comp.inputs[0].connect(operand)
+            return comp.out
         raise UnsupportedPython(node, f"unsupported unary operator: {type(node.op).__name__}")
+
+    def _compare(self, node: ast.Compare) -> OutPort:
+        if len(node.ops) != 1:
+            raise UnsupportedPython(node, "chained comparisons (a < b < c) are not supported")
+        op_name = type(node.ops[0]).__name__
+        mapping = components.COMPARE_MAP.get(op_name)
+        if mapping is None:
+            raise UnsupportedPython(node, f"unsupported comparison: {op_name}")
+        key, out_index = mapping
+        left = self.expr(node.left)
+        right = self.expr(node.comparators[0])
+        comp = self.graph.add_op(components.get(key))
+        comp.inputs[0].connect(left)
+        comp.inputs[1].connect(right)
+        return comp.outputs[out_index]
+
+    def _boolop(self, node: ast.BoolOp) -> OutPort:
+        key = components.BOOLOP_MAP[type(node.op).__name__]
+        ports = [self.expr(v) for v in node.values]
+        acc = ports[0]
+        for port in ports[1:]:          # fold a and b and c -> and(and(a, b), c)
+            comp = self.graph.add_op(components.get(key))
+            comp.inputs[0].connect(acc)
+            comp.inputs[1].connect(port)
+            acc = comp.out
+        return acc
 
     def _call(self, node: ast.Call) -> OutPort:
         name = _call_name(node.func)
+
+        # point(x, y[, z]) / vector(x, y[, z]) -> a geometry constructor.
+        ctor = components.CONSTRUCTOR_MAP.get(name) if name else None
+        if ctor is not None:
+            if node.keywords:
+                raise UnsupportedPython(node, f"{name}() does not accept keyword arguments")
+            return self._construct(ctor, node.args, node)
+
+        # Unary maths: sin/cos/sqrt/abs.
         key = components.CALL_MAP.get(name) if name else None
         if key is None:
             raise UnsupportedPython(node, f"unsupported call: {name or '<expr>'}()")
@@ -108,6 +165,33 @@ class _Analyzer:
         arg = self.expr(node.args[0])
         comp = self.graph.add_op(components.get(key))
         comp.inputs[0].connect(arg)
+        return comp.out
+
+    def _construct(self, key: str, elts: list[ast.AST], node: ast.AST) -> OutPort:
+        """Build a Construct Point / Vector XYZ from 2 or 3 coordinates,
+        padding a missing Z with a zero slider."""
+        if not 2 <= len(elts) <= 3:
+            raise UnsupportedPython(
+                node, f"{key} needs 2 or 3 coordinates, got {len(elts)}")
+        coords = [self.expr(e) for e in elts]
+        while len(coords) < 3:
+            coords.append(self.graph.add_slider(0.0).out)
+        comp = self.graph.add_op(components.get(key))
+        for port, dst in zip(coords, comp.inputs):
+            dst.connect(port)
+        return comp.out
+
+    def _list(self, node: ast.List) -> OutPort:
+        """A list literal becomes a Merge component collecting every item into
+        one output stream (a Grasshopper list)."""
+        if not node.elts:
+            raise UnsupportedPython(node, "empty list has nothing to merge")
+        items = [self.expr(e) for e in node.elts]
+        spec = replace(components.get("merge"),
+                       inputs=tuple(f"D{i + 1}" for i in range(len(items))))
+        comp = self.graph.add_op(spec)
+        for port, dst in zip(items, comp.inputs):
+            dst.connect(port)
         return comp.out
 
     # -- statements ---------------------------------------------------------

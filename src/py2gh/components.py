@@ -54,7 +54,35 @@ _FUNCTIONS = [
     ComponentSpec("abs",  "Absolute",  "VERIFY-abs-guid",      ("x",), ("y",)),
 ]
 
-REGISTRY: dict[str, ComponentSpec] = {c.key: c for c in (_OPERATORS + _FUNCTIONS)}
+# Comparisons: Math > Operators. Each takes (A, B) and exposes TWO boolean
+# outputs, so a single component covers both the strict and the "or-equal" form:
+#   Larger Than  -> (">",  ">=")   Smaller Than -> ("<",  "<=")
+#   Equality     -> ("=",  "!=")
+# The analyzer selects the output index per Python operator (see COMPARE_MAP).
+_COMPARISONS = [
+    ComponentSpec("larger",  "Larger Than",  "VERIFY-larger-guid",   ("A", "B"), (">", ">=")),
+    ComponentSpec("smaller", "Smaller Than", "VERIFY-smaller-guid",  ("A", "B"), ("<", "<=")),
+    ComponentSpec("equal",   "Equality",     "VERIFY-equality-guid", ("A", "B"), ("=", "!=")),
+]
+
+# Boolean logic gates: Maths > Boolean.
+_LOGIC = [
+    ComponentSpec("and", "Gate And", "VERIFY-gate-and-guid", ("A", "B"), ("R",)),
+    ComponentSpec("or",  "Gate Or",  "VERIFY-gate-or-guid",  ("A", "B"), ("R",)),
+    ComponentSpec("not", "Gate Not", "VERIFY-gate-not-guid", ("x",), ("y",)),
+]
+
+# Geometry constructors: Vector > Point. `merge` is variadic -- the analyzer
+# synthesizes a spec with the right number of inputs via dataclasses.replace.
+_GEOMETRY = [
+    ComponentSpec("point",  "Construct Point", "VERIFY-construct-point-guid", ("X", "Y", "Z"), ("Pt",)),
+    ComponentSpec("vector", "Vector XYZ",      "VERIFY-vector-xyz-guid",      ("X", "Y", "Z"), ("V",)),
+    ComponentSpec("merge",  "Merge",           "VERIFY-merge-guid",           ("D1",), ("R",)),
+]
+
+REGISTRY: dict[str, ComponentSpec] = {
+    c.key: c for c in (_OPERATORS + _FUNCTIONS + _COMPARISONS + _LOGIC + _GEOMETRY)
+}
 
 # Well-known special components used as graph sources/sinks.
 SLIDER = ComponentSpec(
@@ -71,10 +99,21 @@ BINOP_MAP = {
     "Add": "add", "Sub": "sub", "Mult": "mul",
     "Div": "div", "Pow": "pow", "Mod": "mod",
 }
-# Map call targets (e.g. math.sin, sin) -> registry keys.
+# Map call targets (e.g. math.sin, sin) -> registry keys (unary maths only).
 CALL_MAP = {
     "sin": "sin", "cos": "cos", "sqrt": "sqrt", "abs": "abs",
 }
+# Boolean BoolOp class names -> registry keys.
+BOOLOP_MAP = {"And": "and", "Or": "or"}
+# Comparison operator class names -> (registry key, output index).
+# The "or-equal" variants reuse the same component's second output.
+COMPARE_MAP = {
+    "Lt":  ("smaller", 0), "LtE": ("smaller", 1),
+    "Gt":  ("larger",  0), "GtE": ("larger",  1),
+    "Eq":  ("equal",   0), "NotEq": ("equal", 1),
+}
+# Call targets that build geometry from 2-3 coordinates -> registry keys.
+CONSTRUCTOR_MAP = {"point": "point", "vector": "vector", "vec": "vector"}
 
 
 def get(key: str) -> ComponentSpec:

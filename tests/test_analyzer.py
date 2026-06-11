@@ -62,10 +62,13 @@ def test_math_call_lowers_to_component():
 
 
 @pytest.mark.parametrize("src", [
-    "a = [1, 2, 3]\n",          # list literal not yet supported in v0
     "for i in range(3): pass\n",  # control flow
     "a, b = 1, 2\n",            # tuple unpacking
     "y = foo(1)\n",             # unknown call
+    "y = True\n",               # boolean literal (no toggle emitter yet)
+    "y = (1 < 2 < 3)\n",        # chained comparison
+    "y = (1, 2, 3, 4)\n",       # 4-tuple is not a point/vector
+    "y = []\n",                 # empty list
 ])
 def test_unsupported_raises(src):
     with pytest.raises(UnsupportedPython):

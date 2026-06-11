@@ -13,8 +13,15 @@ import Grasshopper as gh
 server = gh.Instances.ComponentServer
 
 wanted = {
+    # arithmetic
     "Addition", "Subtraction", "Multiplication", "Division", "Power", "Modulus",
     "Negative", "Sine", "Cosine", "Square Root", "Absolute",
+    # comparisons & boolean logic
+    "Larger Than", "Smaller Than", "Equality",
+    "Gate And", "Gate Or", "Gate Not",
+    # geometry & data
+    "Construct Point", "Vector XYZ", "Merge",
+    # sources / sinks
     "Number Slider", "Panel",
 }
 
