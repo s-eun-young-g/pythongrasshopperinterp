@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "py2gh"
+version = "0.1.0"
+description = "Convert Python source into a Grasshopper definition (.ghx)."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "s-eun-young-g" }]
+keywords = ["grasshopper", "rhino", "transpiler", "ghx", "parametric"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Topic :: Multimedia :: Graphics :: 3D Modeling",
+]
+
+[project.urls]
+Homepage = "https://github.com/s-eun-young-g/pythongrasshopperinterp"
+
+[project.scripts]
+py2gh = "py2gh.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
