@@ -113,7 +113,15 @@ def to_python(graph: Graph) -> str:
         visit(node)
 
     def ref(out: OutPort | None) -> str:
-        return node_var.get(id(out.node), "None") if out is not None else "None"
+        if out is None:
+            return "None"
+        var = node_var.get(id(out.node), "None")
+        # Disambiguate which output of a multi-output component is being read
+        # (e.g. Deconstruct -> X/Y/Z): `t10[0]`, `t10[1]`, ...
+        outs = out.node.outputs
+        if len(outs) > 1 and out in outs:
+            return f"{var}[{outs.index(out)}]"
+        return var
 
     def used_output_index(node: Node) -> int:
         for consumer in graph.nodes:

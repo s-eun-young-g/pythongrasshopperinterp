@@ -158,6 +158,15 @@ def _read_object(obj, wire_index, pending) -> Node | None:
             node.outputs.append(out)
             wire_index[out.instance_guid] = out
 
+        # Bare parameter components (Curve, Surface, Number, Geometry, ...) carry
+        # no param_output chunk: like a slider, the component *is* its output, so
+        # a downstream input cites the node's own InstanceGuid. Index it so those
+        # wires resolve instead of dangling.
+        if not node.outputs:
+            self_out = OutPort(node, node.component_name or "out", iguid)
+            node.outputs.append(self_out)
+            wire_index[iguid] = self_out
+
     node.pivot = _pivot(container)
     return node
 

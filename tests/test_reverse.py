@@ -97,3 +97,79 @@ def test_decompile_recovers_arithmetic():
     # surface an `area = ... * ...` (or `area = <var>` referencing it).
     assert "area" in py
     assert "*" in py and "+" in py
+
+
+# -- fidelity fixes ---------------------------------------------------------
+
+def _minimal_archive(objects_xml: str) -> str:
+    return (
+        '<Archive name="Root"><chunks count="1">'
+        '<chunk name="Definition"><chunks count="1">'
+        '<chunk name="DefinitionObjects">'
+        '<items count="1"><item name="ObjectCount" type_name="gh_int32" type_code="3">2</item></items>'
+        f'<chunks count="2">{objects_xml}</chunks>'
+        '</chunk></chunks></chunk></chunks></Archive>'
+    )
+
+
+def _obj(index, type_guid, name, container_inner):
+    return (
+        f'<chunk name="Object" index="{index}">'
+        f'<items count="2">'
+        f'<item name="GUID" type_name="gh_guid" type_code="9">{type_guid}</item>'
+        f'<item name="Name" type_name="gh_string" type_code="10">{name}</item>'
+        f'</items>'
+        f'<chunks count="1"><chunk name="Container">{container_inner}</chunk></chunks>'
+        f'</chunk>'
+    )
+
+
+def test_bare_parameter_wire_resolves():
+    """A parameter component (no param_output) is its own output: a downstream
+    input citing its node guid must resolve."""
+    curve = _obj(
+        0, "aaaa-curve-type", "Curve",
+        '<items count="2">'
+        '<item name="InstanceGuid" type_name="gh_guid" type_code="9">11111111-1111-1111-1111-111111111111</item>'
+        '<item name="NickName" type_name="gh_string" type_code="10">crv</item>'
+        '</items>',
+    )
+    divide = _obj(
+        1, "bbbb-op-type", "Divide Curve",
+        '<items count="2">'
+        '<item name="InstanceGuid" type_name="gh_guid" type_code="9">22222222-2222-2222-2222-222222222222</item>'
+        '<item name="NickName" type_name="gh_string" type_code="10"></item>'
+        '</items>'
+        '<chunks count="1"><chunk name="param_input" index="0">'
+        '<items count="2">'
+        '<item name="Name" type_name="gh_string" type_code="10">Curve</item>'
+        '<item name="Source" index="0" type_name="gh_guid" type_code="9">11111111-1111-1111-1111-111111111111</item>'
+        '</items>'
+        '</chunk></chunks>',
+    )
+    g = read(_minimal_archive(curve + divide))
+    div = next(n for n in g.nodes if n.component_name == "Divide Curve")
+    assert div.inputs[0].source is not None
+    assert div.inputs[0].source.node.component_name == "Curve"
+
+
+def test_multi_output_source_is_disambiguated():
+    """Decompiling a wire from the 2nd output of a multi-output component should
+    render an indexed reference like `t1[1]`."""
+    from py2gh.decompile import to_python
+    from py2gh.ir import Graph, InPort, Node, NodeKind, OutPort
+
+    g = Graph()
+    src = Node(NodeKind.OP, "Deconstruct", "guid-a", "ia")
+    src.outputs = [OutPort(src, "X", "ox"), OutPort(src, "Y", "oy"), OutPort(src, "Z", "oz")]
+    g.nodes.append(src)
+
+    sink = Node(NodeKind.OP, "Addition", "guid-b", "ib")
+    ip = InPort(sink, "A", "ipa")
+    ip.connect(src.outputs[1])      # read Y, the 2nd output
+    sink.inputs = [ip]
+    sink.outputs = [OutPort(sink, "R", "or")]
+    g.nodes.append(sink)
+
+    py = to_python(g)
+    assert "[1]" in py
