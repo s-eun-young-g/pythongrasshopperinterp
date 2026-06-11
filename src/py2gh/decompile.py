@@ -156,20 +156,31 @@ def to_python(graph: Graph) -> str:
     return "\n".join(lines) + ("\n" if lines else "")
 
 
-def _literal(internal) -> str:
-    """Render a typed-in (persistent) input value as Python."""
-    if internal is None:
-        return "None"
-    v = internal.value
-    if v is None:
-        return f'internal("{internal.kind}")'   # geometry/plane/etc.: placeholder
+def _fmt_value(v) -> str:
     if isinstance(v, bool):
         return "True" if v else "False"
     if isinstance(v, int):
         return str(v)
     if isinstance(v, float):
         return _fmt_number(v)
+    if isinstance(v, tuple):
+        return "(" + ", ".join(_fmt_value(x) for x in v) + ")"
     return repr(v)
+
+
+def _literal(internal) -> str:
+    """Render a typed-in (persistent) input value as Python."""
+    if internal is None:
+        return "None"
+    v = internal.value
+    if v is None:
+        # geometry blob or undecoded type: a labelled placeholder (e.g. Brep).
+        return f'internal("{internal.kind}")'
+    if isinstance(v, tuple):
+        # structured geometry (interval/plane/point/vector): keep the kind label.
+        inner = ", ".join(_fmt_value(x) for x in v)
+        return f'internal("{internal.kind}", {inner})'
+    return _fmt_value(v)
 
 
 def _render_op(node: Node, arg, used_output_index) -> str:

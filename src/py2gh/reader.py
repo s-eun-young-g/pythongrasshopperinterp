@@ -24,6 +24,7 @@ from __future__ import annotations
 import xml.etree.ElementTree as ET
 
 from .components import PANEL, SLIDER, TOGGLE
+from .geometry import decode_geometry_type
 from .ir import Graph, Internal, InPort, Node, NodeKind, OutPort
 
 
@@ -93,33 +94,67 @@ _SCALAR = {
 }
 
 
-def _persistent(param_chunk: ET.Element) -> Internal | None:
-    """Read a typed-in value stored on an unwired input (PersistentData chunk).
+def _floats(item: ET.Element, *tags: str) -> tuple[float, ...]:
+    return tuple(_to_float(item.findtext(t, "0")) for t in tags)
 
-    Returns the first scalar found (the common single-value case); for geometry
-    or other non-scalar data, returns an Internal naming the GH type so callers
-    can show a placeholder instead of a wrong value."""
-    pd = _chunk(param_chunk, "PersistentData")
-    if pd is None:
-        return None
-    leaves: list[tuple[str, str]] = []
-    for branch in _chunks(pd, "Branch"):
-        for item in _chunks(branch, "Item"):
-            items = item.find("items")
-            if items is None:
-                continue
-            for it in items.findall("item"):
-                leaves.append((it.get("type_name", ""), (it.text or "").strip()))
-    if not leaves:
-        return None
-    type_name, text = leaves[0]
+
+def _coerce_leaf(item: ET.Element) -> tuple[str, object] | None:
+    """Decode one PersistentData leaf into (kind, value).
+
+    Scalars give a Python scalar; structured geometry (interval/plane/point/
+    vector) gives a tuple; a geometry blob gives (its type, None); anything else
+    keeps its GH type name with value None."""
+    type_name = item.get("type_name", "")
+    text = (item.text or "").strip()
+
     coerce = _SCALAR.get(type_name)
     if coerce is not None:
         try:
-            return Internal(type_name, coerce(text), count=len(leaves))
+            return (type_name, coerce(text))
         except (TypeError, ValueError):
-            return Internal(type_name, None, count=len(leaves))
-    return Internal(type_name, None, count=len(leaves))   # geometry / plane / ...
+            return (type_name, None)
+
+    if type_name == "gh_interval1d":
+        return ("interval", _floats(item, "A", "B"))
+    if type_name == "gh_plane":
+        return ("plane", (_floats(item, "Ox", "Oy", "Oz"),
+                          _floats(item, "Xx", "Xy", "Xz"),
+                          _floats(item, "Yx", "Yy", "Yz")))
+    if type_name in ("gh_point", "gh_3dpoint"):
+        return ("point", _floats(item, "X", "Y", "Z"))
+    if type_name in ("gh_vector", "gh_3dvector"):
+        return ("vector", _floats(item, "X", "Y", "Z"))
+    if type_name == "gh_guid":
+        return ("guid", text)
+    if type_name == "gh_bytearray":
+        stream = item.find("stream")
+        geo = decode_geometry_type(stream.text if stream is not None else "")
+        return (geo or "geometry", None)
+
+    return (type_name, None)
+
+
+def _persistent(param_chunk: ET.Element) -> Internal | None:
+    """Read a typed-in value stored on an unwired input (PersistentData chunk).
+
+    Returns the first value found (the common single-value case); structured
+    geometry is decoded to a tuple, a geometry blob to its type name."""
+    pd = _chunk(param_chunk, "PersistentData")
+    if pd is None:
+        return None
+    leaves: list[ET.Element] = []
+    for branch in _chunks(pd, "Branch"):
+        for item in _chunks(branch, "Item"):
+            items = item.find("items")
+            if items is not None:
+                leaves.extend(items.findall("item"))
+    if not leaves:
+        return None
+    decoded = _coerce_leaf(leaves[0])
+    if decoded is None:
+        return None
+    kind, value = decoded
+    return Internal(kind, value, count=len(leaves))
 
 
 # -- the reader -------------------------------------------------------------

@@ -35,9 +35,12 @@ reconstruction (`examples/truss2d.py`) are checked in to show the reverse
 pipeline on a non-trivial definition. Native geometry/solid components
 (Divide Curve, Iso Curve, Pipe, Solid Union, …) surface as `gh(...)`
 placeholders; the dataflow, slider values, typed-in (persistent) input values,
-and multi-output wiring all survive. Geometry typed directly into an input
-(rather than wired) shows as `internal("<gh-type>")`, since decoding the
-OpenNURBS blob needs `rhino3dm`.
+and multi-output wiring all survive. Structured geometry typed into an input
+(interval, plane, point, vector) is decoded to its values; a geometry *blob*
+(`gh_bytearray`) is deflate-decompressed just far enough to read its type, so it
+shows as e.g. `internal("Brep")` rather than opaque bytes. Reconstructing a
+blob's exact coordinates needs Rhino/GH_IO (it's a RhinoCommon goo archive, not a
+standalone OpenNURBS `.3dm`, so `rhino3dm` can't decode it either).
 
 ## How it works
 

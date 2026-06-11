@@ -75,7 +75,11 @@ def describe(graph: Graph) -> str:
             return src_label(ip.source)
         if ip.persistent is not None:
             p = ip.persistent
-            return str(p.value) if p.value is not None else f"<{p.kind}>"
+            if p.value is None:
+                return f"<{p.kind}>"               # geometry blob (e.g. <Brep>)
+            if isinstance(p.value, tuple):
+                return f"{p.kind}{p.value}"          # interval(0.0, 1.0)
+            return str(p.value)
         return "—"
 
     lines.append("Operations:")

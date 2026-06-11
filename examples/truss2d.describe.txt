@@ -43,7 +43,7 @@ Operations:
   [15] Construct Point  [geometry]
       X coordinate=[16] Range  Y coordinate=[16] Range  Z coordinate=0.0
   [16] Range
-      Domain=<gh_interval1d>  Steps=number of trusses
+      Domain=interval(0.0, 1.0)  Steps=number of trusses
   [17] Divide Curve  [geometry]
       Curve=—  Count=number of columns  Kinks=False
   [18] Line  [geometry]
