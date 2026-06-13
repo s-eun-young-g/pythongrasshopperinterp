@@ -1,6 +1,9 @@
 # py2gh — Python → Grasshopper
 
-Convert Python code into a Grasshopper definition (`.ghx`) you can open in Rhino.
+Grasshopper is great until you're dragging your 200th node around a canvas. So:
+**write Python, get a Grasshopper definition** (`.ghx`) you can open in Rhino — and
+read one back the other way too. Basically a tiny compiler between "code brain" and
+"node-editor brain."
 
 ```bash
 pip install -e .
@@ -65,15 +68,32 @@ A wire in a `.ghx` is not a top-level element — it lives on the **downstream
 input** as a `Source` item referencing the **upstream object's GUID**. The
 emitter reproduces that exactly (verified against a real Grasshopper export).
 
-## Status
+## Current status (the honest version)
 
-Working v0, **structure-validated against a real Grasshopper export** (GH 0.9+,
-ArchiveVersion 0.2.2). The Number Slider, Panel, and operator (container +
-`param_input`/`param_output`) serializations match the real format
-item-for-item, and operator→operator wiring is verified to resolve through
-`param_output` GUIDs rather than node GUIDs.
+**✅ works & tested** — 64 passing tests across the full forward path (Python →
+`.ghx`) and the reverse path (`.ghx` → description + best-effort Python). The
+output is **structure-validated item-for-item against a real Grasshopper export**,
+and it happily chews through real definitions — a 45-component truss, a
+467-component dome — and hands back a readable inventory.
 
-Supported Python:
+**🚧 still drafting / not confirmed yet** — most component GUIDs are `VERIFY`
+placeholders until I harvest the real ones from a running Grasshopper
+(`py2gh --check-guids` lists the suspects). I also haven't yet sat down at a
+machine with Rhino 8 to open a generated `.ghx` and watch it round-trip — that's
+the one thing I can't test from a laptop without Rhino. Reading binary `.gh`
+directly is on the list too (for now you `Save As .ghx` first).
+
+**💡 ideas / where it's headed** — harvest the remaining GUIDs, native binary
+`.gh` via GH_IO.dll, auto-layout that doesn't pile nodes on top of each other, and
+a GhPython "escape hatch" so *any* Python round-trips even when there's no native
+component for it. (Fuller roadmap below.)
+
+### What it speaks (and what it'll politely refuse)
+
+Built against a real export (GH 0.9+, ArchiveVersion 0.2.2): Number Slider, Panel,
+and operator serializations match item-for-item, and operator→operator wiring
+resolves through `param_output` GUIDs (not node GUIDs — getting that wrong
+silently breaks every wire). Supported Python:
 
 - numeric literals (→ sliders), names, unary minus
 - binary ops `+ - * / ** %`
