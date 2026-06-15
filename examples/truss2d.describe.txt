@@ -1,5 +1,5 @@
-py2gh - definition description
-================================
+py2gh - definition description - full breakdown
+=================================================================
 Objects: 45  (sliders: 7, toggles: 0, operations: 38, panels: 0)
 
 Parametric inputs (Number Sliders):
