@@ -35,14 +35,14 @@ def describe(graph: Graph) -> str:
 
     def src_label(out: OutPort | None) -> str:
         if out is None:
-            return "—"
+            return "-"
         node = out.node
         if node.kind is NodeKind.OP:
             return f"[{op_index[id(node)]}] {node.component_name}"
         return node.nickname or node.component_name
 
     lines: list[str] = []
-    lines.append("py2gh — definition description")
+    lines.append("py2gh - definition description")
     lines.append("=" * 32)
     lines.append(
         f"Objects: {len(graph.nodes)}  "
@@ -80,7 +80,7 @@ def describe(graph: Graph) -> str:
             if isinstance(p.value, tuple):
                 return f"{p.kind}{p.value}"          # interval(0.0, 1.0)
             return str(p.value)
-        return "—"
+        return "-"
 
     lines.append("Operations:")
     if ops:

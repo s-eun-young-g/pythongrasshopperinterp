@@ -1,4 +1,4 @@
-py2gh — definition description
+py2gh - definition description
 ================================
 Objects: 45  (sliders: 7, toggles: 0, operations: 38, panels: 0)
 
@@ -45,7 +45,7 @@ Operations:
   [16] Range
       Domain=interval(0.0, 1.0)  Steps=number of trusses
   [17] Divide Curve  [geometry]
-      Curve=—  Count=number of columns  Kinks=False
+      Curve=-  Count=number of columns  Kinks=False
   [18] Line  [geometry]
       Start Point=[3] Divide Curve  End Point=[27] Construct Point
   [19] Cull Index

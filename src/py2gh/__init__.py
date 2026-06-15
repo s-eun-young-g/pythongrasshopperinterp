@@ -1,4 +1,4 @@
-"""py2gh — convert Python source into a Grasshopper definition (.ghx).
+"""py2gh - convert Python source into a Grasshopper definition (.ghx).
 
 Public API:
     analyze(source)        -> ir.Graph
