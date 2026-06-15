@@ -9,7 +9,7 @@ read, diff, or edit by hand. Writing the same logic in Python keeps it legible.
 
 ![the great spaghetti monster](docs/spaghetti-monster.png)
 
-*the great spaghetti monster*
+see above: the great spaghetti monster. the creature that haunts the nightmares of every designer and architect. the thing I'm trying to kill here.
 
 ```bash
 pip install -e .
