@@ -4,6 +4,13 @@ Write Python, get a Grasshopper definition (`.ghx`) you can open in Rhino, and r
 one back the other way too. It is a small compiler between code and the
 Grasshopper node editor.
 
+A real Grasshopper definition can grow into a wall of nodes and wires that is hard to
+read, diff, or edit by hand. Writing the same logic in Python keeps it legible.
+
+![the great spaghetti monster](docs/spaghetti-monster.png)
+
+*the great spaghetti monster*
+
 ```bash
 pip install -e .
 py2gh examples/simple_math.py -o out.ghx
